@@ -1,58 +1,24 @@
-import base64
-import requests
-import os
+from __future__ import absolute_import
 
-from flask import app, Flask
-app = Flask(__name__)
+from models import Interface
+from flask import Flask
 
-class SpotifyAuth(object):
-    """
-        Current auth is for Client Credentials, which prevents indiviudal
-        user data access. Will update eventually.
-        https://developer.spotify.com/web-api/authorization-guide/#client_credentials_flow
+muzak = Flask(__name__)
 
-    """
-    def __init__(self):
-        self.spotify_base = 'https://api.spotify.com/'
-        self.auth_base = 'https://accounts.spotify.com/api/token'
-        self.client_creds = {
-            'client_id': os.environ.get('SPOTIFY_CLIENT'),
-            'client_secret': os.environ.get('SPOTIFY_SECRET'),
-            'reponse_type': 'code',
-            'scopes': None
-        }
-        self.token = None
 
-    def get_auth_header(self):
-        header = self.client_creds
-        encoded = base64.b64encode("{}:{}".format(header['client_id'], header['client_secret']))
-        headers = {'Authorization': 'Basic {}'.format(encoded)}
-        params = {'grant_type': 'client_credentials'}
-        res = requests.post(self.auth_base, headers=headers, params=params)
-        self.token = res.tojson()['access_token']
-        authorized_header = {
-            'Authorization': 'Bearer {}'.format(self.token)
-        }
-        return authorized_header
+@muzak.route('/api/spotify-user/', methods=['GET'])
+def spotify():
+    sp = Interface().spotify
 
-    def get_endpoint_url(self, selection):
-        """
-        Pass a string to get the desired enrpoint concatenated to the
-        spotfy_base
+    return sp.endpoint_url('user')
 
-        """
-        endpoints = {
-            'user': None,
-            'user-top': 'v1/me/top/',
-            'track': None,
-            'artist': None
-        }
 
-        if selection not in endpoints or not isinstance(selection, str):
-            return None
+@muzak.route('/api/songkick-user/', methods=['GET'])
+def songkick():
+    sk = Interface.songkick
 
-        endpoint = endpoints.get(selection)
-        return self.spotify_base + endpoint
+    return sk.endpoint_url('user')
+
 
 if __name__ == '__main__':
-    app.run()
+    muzak.run()
